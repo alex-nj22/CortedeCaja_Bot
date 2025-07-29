@@ -84,6 +84,16 @@ app.get('/procesar', async (req, res) => {
   res.send('Procesamiento ejecutado');
 });
 
+const cron = require('node-cron');
+
+// Ejecutar procesamiento automático cada 3 minutos, solo en horario permitido
+cron.schedule('*/3 7-22 * * *', async () => {
+  console.log('⏰ Ejecutando procesamiento automático de cortes (7:00-22:59)...');
+  await procesarSiguientesCortesCaja();
+}, {
+  timezone: "America/El_Salvador"
+});
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Servidor Express escuchando en puerto ${PORT}`);
