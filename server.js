@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const cron = require('node-cron');
+const cron = require('node-cron'); // ← Solo aquí, una vez
 const { procesarCortes } = require('./index');
 const { procesarUpdateTelegram } = require('./telegram'); // Ajusta si tu lógica de Telegram está en otro lado
 
@@ -13,9 +13,6 @@ app.post('/telegram', async (req, res) => {
   await procesarUpdateTelegram(req.body);
   res.sendStatus(200);
 });
-
-// Tarea automática cada 3 minutos (7:00 a 22:59)
-const cron = require('node-cron');
 
 // 1. Cada 3 min de 7:00 a 21:59
 cron.schedule('*/3 7-21 * * *', async () => {
