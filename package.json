@@ -4,7 +4,7 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node test_propsjs",
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -24,4 +24,8 @@
   "engines": {
     "node": ">=20.0.0"
   }
+}
+
+"scripts": {
+  "start": "node test_props.js"
 }
