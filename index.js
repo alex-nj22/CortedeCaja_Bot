@@ -8,19 +8,17 @@ const { notificarCorteEnTelegram } = require('./telegram');
 
 const posiblesSucursales = [1, 2, 3, 4, 5, 7];
 const CHAT_ID_DEFAULT = process.env.CHAT_ID_DEFAULT || '-1002622059684';
-
 const BATCH_SIZE = 6; // Procesar 6 en paralelo
 
-(async () => {
+// Lógica principal exportada como función
+async function procesarCortes() {
   try {
     // 1. LOGIN
     const sessionCookie = await iniciarSesion({
       username: process.env.FARMA_USER || "documentop.supervisor",
       password: process.env.FARMA_PASS || "documento9999"
     });
-    if (!sessionCookie) {
-      throw new Error("No se pudo iniciar sesión en Farma Salud.");
-    }
+    if (!sessionCookie) throw new Error("No se pudo iniciar sesión en Farma Salud.");
     console.log("✅ Cookie obtenida.");
 
     // 2. Recupera el último ID procesado, o empieza por el 1800 si nunca has procesado
@@ -83,8 +81,8 @@ const BATCH_SIZE = 6; // Procesar 6 en paralelo
 
       if (maxExitoso > ultimoID) {
         await setProperty('ultimoIdCorteProcesado', maxExitoso);
-        ultimoID = maxExitoso;
         procesadosEnEstaEjecucion += (maxExitoso - (ultimoID - BATCH_SIZE));
+        ultimoID = maxExitoso;
       } else {
         // Si ninguno del lote fue exitoso, probablemente llegaste al final de los registros
         console.log("No se encontró ningún corte válido en este lote, deteniendo el procesamiento.");
@@ -94,10 +92,15 @@ const BATCH_SIZE = 6; // Procesar 6 en paralelo
 
     console.log(`🔵 Último ID procesado: ${ultimoID}`);
     console.log(`Total procesados en esta ejecución: ${procesadosEnEstaEjecucion}`);
-    process.exit(0);
 
   } catch (e) {
     console.error("❌ Error en el procesamiento general:", e);
-    process.exit(1);
   }
-})();
+}
+
+// Permite ejecución manual
+if (require.main === module) {
+  procesarCortes();
+}
+
+module.exports = { procesarCortes };
