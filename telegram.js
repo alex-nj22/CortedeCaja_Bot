@@ -17,7 +17,7 @@ async function notificarCorteEnTelegram(dataCorte, idCorte) {
     body: JSON.stringify({
       chat_id: CHAT_ID,
       text: msj,
-      parse_mode: "Markdown",
+      // parse_mode: "Markdown",
       reply_markup
     })
   });
