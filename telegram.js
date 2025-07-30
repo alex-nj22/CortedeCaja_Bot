@@ -1,5 +1,3 @@
-const fetch = require('node-fetch');
-
 async function notificarCorteEnTelegram(dataCorte, idCorte) {
   const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN;
   const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -13,7 +11,7 @@ async function notificarCorteEnTelegram(dataCorte, idCorte) {
       ]
     ]
   };
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+  const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -23,6 +21,7 @@ async function notificarCorteEnTelegram(dataCorte, idCorte) {
       reply_markup
     })
   });
-}
 
-module.exports = { notificarCorteEnTelegram };
+  const resText = await res.text();
+  console.log('[TELEGRAM RESPONSE]', resText);
+}
