@@ -132,35 +132,36 @@ async function procesarSiguientesCortesCaja() {
       console.error(`❌ [FETCH] Sucursal ${sucursal} Corte ${idCorte}:`, e);
     }
   }
-if (valido) {
-  const datos = extraerDatosDeMovimiento(dataCorte.movimiento, idCorte);
-  datos.fecha = convertirFechaAISO(datos.fecha);
-  console.log('[DEBUG] Fecha convertida:', datos.fecha);
 
-  await db.query(`
-    INSERT INTO cortes_caja (
-      id_corte, sucursal, tipo, fecha, hora, cajero, ingresos, venta, subtotal, vales,
-      total_caja, retención, devoluciónes, efectivo, tarjeta, credito, diferencia,
-      facturas_monto, credito_fiscal_monto, facturas_cantidad, credito_fiscal_cantidad,
-      final, razon, corregido, responsable
-    ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-      $11, $12, $13, $14, $15, $16, $17,
-      $18, $19, $20, $21,
-      $22, $23, $24, $25
-    ) ON CONFLICT (id_corte, sucursal) DO NOTHING
-  `, [
-    datos.id_corte, sucursalValida, datos.tipo, datos.fecha, datos.hora, datos.cajero, datos.ingresos, datos.venta, datos.subtotal, datos.vales,
-    datos.total_caja, datos.retención, datos.devoluciónes, datos.efectivo, datos.tarjeta, datos.credito, datos.diferencia,
-    datos.facturas_monto, datos.credito_fiscal_monto, datos.facturas_cantidad, datos.credito_fiscal_cantidad,
-    datos.final, datos.razon, datos.corregido, datos.responsable
-  ]);
-  await setProperty('ultimoIdCorteProcesado', idCorte);
-  await notificarCorteEnTelegram(dataCorte, idCorte);
-  console.log(`✅ [CORRECTO] Procesado corte válido: ${idCorte} sucursal ${sucursalValida}`);
-} else {
-  console.log(`🛑 [NO VÁLIDO] Corte ${idCorte} no es válido (no se actualiza últimoId)`);
-}
+  if (valido) {
+    const datos = extraerDatosDeMovimiento(dataCorte.movimiento, idCorte);
+    datos.fecha = convertirFechaAISO(datos.fecha);
+    console.log('[DEBUG] Fecha convertida:', datos.fecha);
+
+    await db.query(`
+      INSERT INTO cortes_caja (
+        id_corte, sucursal, tipo, fecha, hora, cajero, ingresos, venta, subtotal, vales,
+        total_caja, retención, devoluciónes, efectivo, tarjeta, credito, diferencia,
+        facturas_monto, credito_fiscal_monto, facturas_cantidad, credito_fiscal_cantidad,
+        final, razon, corregido, responsable
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17,
+        $18, $19, $20, $21,
+        $22, $23, $24, $25
+      ) ON CONFLICT (id_corte, sucursal) DO NOTHING
+    `, [
+      datos.id_corte, sucursalValida, datos.tipo, datos.fecha, datos.hora, datos.cajero, datos.ingresos, datos.venta, datos.subtotal, datos.vales,
+      datos.total_caja, datos.retención, datos.devoluciónes, datos.efectivo, datos.tarjeta, datos.credito, datos.diferencia,
+      datos.facturas_monto, datos.credito_fiscal_monto, datos.facturas_cantidad, datos.credito_fiscal_cantidad,
+      datos.final, datos.razon, datos.corregido, datos.responsable
+    ]);
+    await setProperty('ultimoIdCorteProcesado', idCorte);
+    await notificarCorteEnTelegram(dataCorte, idCorte);
+    console.log(`✅ [CORRECTO] Procesado corte válido: ${idCorte} sucursal ${sucursalValida}`);
+  } else {
+    console.log(`🛑 [NO VÁLIDO] Corte ${idCorte} no es válido (no se actualiza últimoId)`);
+  }
 
   console.log('⚡ [procesarSiguientesCortesCaja] FIN');
 }
