@@ -6,6 +6,16 @@ function convertirFechaAISO(ddmmaaaa) {
   return `${partes[2]}-${partes[1]}-${partes[0]}`;
 }
 
+// Funciones para limpiar y convertir números
+function limpiarEntero(valor) {
+  if (valor === "" || valor === undefined || valor === null || isNaN(valor)) return null;
+  return parseInt(valor, 10);
+}
+function limpiarDecimal(valor) {
+  if (valor === "" || valor === undefined || valor === null || isNaN(valor)) return null;
+  return parseFloat(valor);
+}
+
 // Parser de movimiento
 function extraerDatosDeMovimiento(mov, idCorte) {
   const datos = {};
@@ -22,53 +32,53 @@ function extraerDatosDeMovimiento(mov, idCorte) {
   datos.hora = m ? m[2] : "";
 
   m = mov.match(/\(\+\)INGRESOS \$:\s*([\d\.,]+)/);
-  datos.ingresos = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.ingresos = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   m = mov.match(/\(\+\) VENTA \$:\s*([\d\.,]+)/);
-  datos.venta = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.venta = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   m = mov.match(/SUBTOTAL \$:\s*([\d\.,]+)/);
-  datos.subtotal = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.subtotal = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   m = mov.match(/VALES \$:\s*([\d\.,]+)/);
-  datos.vales = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.vales = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   m = mov.match(/TOTAL CAJA \$:\s*([\d\.,]+)/);
-  datos.total_caja = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.total_caja = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   m = mov.match(/RETENCION \$:\s*([\d\.,]+)/);
-  datos.retención = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.retención = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   m = mov.match(/DEVOLUCIONES\$:\s*([\d\.,]+)/);
-  datos.devoluciónes = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.devoluciónes = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   m = mov.match(/EFECTIVO \$:\s*([\d\.,]+)/);
-  datos.efectivo = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.efectivo = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   m = mov.match(/PAGOS CON TARJETA[\s\S]+?TOTAL\s+([\d\.,]+)/);
-  datos.tarjeta = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.tarjeta = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   m = mov.match(/VENTAS AL CREDITO[\s\S]+?TOTAL\s+([\d\.,]+)/);
-  datos.credito = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.credito = limpiarDecimal(m ? m[1].replace(",", "") : "");
 
   if (!isNaN(datos.efectivo) && !isNaN(datos.total_caja)) {
     const diff = +(datos.efectivo - datos.total_caja).toFixed(2);
     datos.diferencia = Math.abs(diff) < 0.01 ? 0 : diff;
   } else {
-    datos.diferencia = "";
+    datos.diferencia = null;
   }
 
   m = mov.match(/FACTURAS:\s+[\d\.,]+\s+[\d\.,]+\s+([\d\.,]+)/);
-  datos.facturas_monto = m ? parseFloat(m[1].replace(",", "")) : "";
+  datos.facturas_monto = limpiarDecimal(m ? m[1] : "");
 
   m = mov.match(/FISCALES:\s+[\d\.,]+\s+[\d\.,]+\s+([\d\.,]+)/);
-  datos.credito_fiscal_monto = m ? parseFloat(m[1].replace(",", "")) : "";
+  datos.credito_fiscal_monto = limpiarDecimal(m ? m[1] : "");
 
   m = mov.match(/FACTURAS:\s+\d+\s+\d+\s+(\d+)/);
-  datos.facturas_cantidad = m ? parseInt(m[1], 10) : "";
+  datos.facturas_cantidad = limpiarEntero(m ? m[1] : "");
 
   m = mov.match(/FISCALES:\s+\d+\s+\d+\s+(\d+)/);
-  datos.credito_fiscal_cantidad = m ? parseInt(m[1], 10) : "";
+  datos.credito_fiscal_cantidad = limpiarEntero(m ? m[1] : "");
 
   datos.final = datos.tipo && datos.tipo.match(/z/i) ? "Si" : "";
 
