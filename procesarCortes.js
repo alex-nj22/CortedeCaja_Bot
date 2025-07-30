@@ -6,60 +6,60 @@ const fetch = require('node-fetch');
 
 function extraerDatosDeMovimiento(mov, idCorte) {
   const datos = {};
-  // Corte Tipo
+  // tipo (corte_tipo)
   let m = mov.match(/CORTE TIPO:\s*([^\n]+)/i);
-  datos.corte_tipo = m ? m[1].trim() : "";
+  datos.tipo = m ? m[1].trim() : "";
 
-  // Empleado/Responsable
+  // cajero (empleado)
   m = mov.match(/EMPLEADO:\s*([^\n]+)/);
-  datos.responsable = m ? m[1].trim() : "";
+  datos.cajero = m ? m[1].trim() : "";
 
-  // Fecha y hora
+  // fecha y hora
   m = mov.match(/FECHA:\s*(\d{2}-\d{2}-\d{4})\s*HORA:\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
   datos.fecha = m ? m[1].replace(/-/g, "/") : "";
   datos.hora = m ? m[2] : "";
 
-  // Ingresos
+  // ingresos
   m = mov.match(/\(\+\)INGRESOS \$:\s*([\d\.,]+)/);
   datos.ingresos = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Venta
+  // venta
   m = mov.match(/\(\+\) VENTA \$:\s*([\d\.,]+)/);
   datos.venta = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Subtotal
+  // subtotal
   m = mov.match(/SUBTOTAL \$:\s*([\d\.,]+)/);
   datos.subtotal = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Vales
+  // vales
   m = mov.match(/VALES \$:\s*([\d\.,]+)/);
   datos.vales = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Total caja
+  // total_caja
   m = mov.match(/TOTAL CAJA \$:\s*([\d\.,]+)/);
   datos.total_caja = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Retención
+  // retención
   m = mov.match(/RETENCION \$:\s*([\d\.,]+)/);
-  datos.retencion = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.retención = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Devoluciones
+  // devoluciones
   m = mov.match(/DEVOLUCIONES\$:\s*([\d\.,]+)/);
-  datos.devoluciones = m ? parseFloat(m[1].replace(",", "")) : 0;
+  datos.devoluciónes = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Efectivo
+  // efectivo
   m = mov.match(/EFECTIVO \$:\s*([\d\.,]+)/);
   datos.efectivo = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Tarjeta
+  // tarjeta
   m = mov.match(/PAGOS CON TARJETA[\s\S]+?TOTAL\s+([\d\.,]+)/);
   datos.tarjeta = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Crédito
+  // credito
   m = mov.match(/VENTAS AL CREDITO[\s\S]+?TOTAL\s+([\d\.,]+)/);
   datos.credito = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // Diferencia
+  // diferencia
   if (!isNaN(datos.efectivo) && !isNaN(datos.total_caja)) {
     const diff = +(datos.efectivo - datos.total_caja).toFixed(2);
     datos.diferencia = Math.abs(diff) < 0.01 ? 0 : diff;
@@ -67,37 +67,38 @@ function extraerDatosDeMovimiento(mov, idCorte) {
     datos.diferencia = "";
   }
 
-  // $ Facturas
+  // facturas_monto
   m = mov.match(/FACTURAS:\s+[\d\.,]+\s+[\d\.,]+\s+([\d\.,]+)/);
-  datos.facturas = m ? parseFloat(m[1].replace(",", "")) : "";
+  datos.facturas_monto = m ? parseFloat(m[1].replace(",", "")) : "";
 
-  // $ Crédito Fiscal
+  // credito_fiscal_monto
   m = mov.match(/FISCALES:\s+[\d\.,]+\s+[\d\.,]+\s+([\d\.,]+)/);
-  datos.credito_fiscal = m ? parseFloat(m[1].replace(",", "")) : "";
+  datos.credito_fiscal_monto = m ? parseFloat(m[1].replace(",", "")) : "";
 
-  // Facturas cantidad
+  // facturas_cantidad
   m = mov.match(/FACTURAS:\s+\d+\s+\d+\s+(\d+)/);
   datos.facturas_cantidad = m ? parseInt(m[1], 10) : "";
 
-  // Crédito Fiscal cantidad
+  // credito_fiscal_cantidad
   m = mov.match(/FISCALES:\s+\d+\s+\d+\s+(\d+)/);
   datos.credito_fiscal_cantidad = m ? parseInt(m[1], 10) : "";
 
-  // Final (campo lógico: Z en tipo)
-  datos.final = datos.corte_tipo && datos.corte_tipo.match(/z/i) ? "Si" : "";
+  // final (Z)
+  datos.final = datos.tipo && datos.tipo.match(/z/i) ? "Si" : "";
 
-  // Razón, corregido (dejar en blanco; los llena el bot)
+  // razón, corregido, responsable
   datos.razon = "";
   datos.corregido = "";
+  datos.responsable = datos.cajero || "";
 
+  // id_corte, sucursal
   datos.id_corte = idCorte;
+
   return datos;
 }
-
-
 async function procesarSiguientesCortesCaja() {
   console.log('⏳ [procesarSiguientesCortesCaja] INICIO');
-  let ultimoID = parseInt(await getProperty('ultimoIdCorteProcesado'), 10) || 1800; // Ajusta tu inicial si es necesario
+  let ultimoID = parseInt(await getProperty('ultimoIdCorteProcesado'), 10) || 1800;
   let idCorte = ultimoID + 1;
 
   const sessionCookie = await iniciarSesion();
@@ -138,28 +139,25 @@ async function procesarSiguientesCortesCaja() {
   }
 
   if (valido) {
-    // --- ADAPTADO: extrae los datos con el parser, y guarda cada campo ---
     const datos = extraerDatosDeMovimiento(dataCorte.movimiento, idCorte);
 
     await db.query(`
       INSERT INTO cortes_caja (
-        id_corte, corte_tipo, fecha, hora, ingresos, venta, subtotal, vales,
-        total_caja, retencion, devoluciones, efectivo, tarjeta, credito, diferencia,
-        facturas, credito_fiscal, facturas_cantidad, credito_fiscal_cantidad,
-        final, razon, corregido, responsable, sucursal, datos, fecha_creacion, estado
-      )
-      VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8,
-        $9, $10, $11, $12, $13, $14, $15,
-        $16, $17, $18, $19,
-        $20, $21, $22, $23, $24, $25, $26
-      )
-      ON CONFLICT (id_corte, sucursal) DO NOTHING
+        id_corte, sucursal, tipo, fecha, hora, cajero, ingresos, venta, subtotal, vales,
+        total_caja, retención, devoluciónes, efectivo, tarjeta, credito, diferencia,
+        facturas_monto, credito_fiscal_monto, facturas_cantidad, credito_fiscal_cantidad,
+        final, razon, corregido, responsable
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17,
+        $18, $19, $20, $21,
+        $22, $23, $24, $25
+      ) ON CONFLICT (id_corte, sucursal) DO NOTHING
     `, [
-      datos.id_corte, datos.corte_tipo, datos.fecha, datos.hora, datos.ingresos, datos.venta, datos.subtotal, datos.vales,
-      datos.total_caja, datos.retencion, datos.devoluciones, datos.efectivo, datos.tarjeta, datos.credito, datos.diferencia,
-      datos.facturas, datos.credito_fiscal, datos.facturas_cantidad, datos.credito_fiscal_cantidad,
-      datos.final, datos.razon, datos.corregido, datos.responsable, sucursalValida, JSON.stringify(dataCorte), new Date(), 'pendiente'
+      datos.id_corte, sucursalValida, datos.tipo, datos.fecha, datos.hora, datos.cajero, datos.ingresos, datos.venta, datos.subtotal, datos.vales,
+      datos.total_caja, datos.retención, datos.devoluciónes, datos.efectivo, datos.tarjeta, datos.credito, datos.diferencia,
+      datos.facturas_monto, datos.credito_fiscal_monto, datos.facturas_cantidad, datos.credito_fiscal_cantidad,
+      datos.final, datos.razon, datos.corregido, datos.responsable
     ]);
     await setProperty('ultimoIdCorteProcesado', idCorte);
     await notificarCorteEnTelegram(dataCorte, idCorte);
