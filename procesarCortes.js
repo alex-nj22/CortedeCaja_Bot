@@ -1,65 +1,56 @@
-const db = require('./db');
-const { getProperty, setProperty } = require('./props');
-const { iniciarSesion } = require('./login');
-const { notificarCorteEnTelegram } = require('./telegram');
-const fetch = require('node-fetch');
+// Utilidad para convertir fecha "14/07/2025" → "2025-07-14"
+function convertirFechaAISO(ddmmaaaa) {
+  if (!ddmmaaaa || typeof ddmmaaaa !== "string") return null;
+  const partes = ddmmaaaa.split('/');
+  if (partes.length !== 3) return null;
+  return `${partes[2]}-${partes[1]}-${partes[0]}`;
+}
 
+// Parser de movimiento
 function extraerDatosDeMovimiento(mov, idCorte) {
   const datos = {};
-  // tipo (corte_tipo)
-  let m = mov.match(/CORTE TIPO:\s*([^\n]+)/i);
+  let m;
+
+  m = mov.match(/CORTE TIPO:\s*([^\n]+)/i);
   datos.tipo = m ? m[1].trim() : "";
 
-  // cajero (empleado)
   m = mov.match(/EMPLEADO:\s*([^\n]+)/);
   datos.cajero = m ? m[1].trim() : "";
 
-  // fecha y hora
   m = mov.match(/FECHA:\s*(\d{2}-\d{2}-\d{4})\s*HORA:\s*(\d{1,2}:\d{2}\s*[AP]M)/i);
   datos.fecha = m ? m[1].replace(/-/g, "/") : "";
   datos.hora = m ? m[2] : "";
 
-  // ingresos
   m = mov.match(/\(\+\)INGRESOS \$:\s*([\d\.,]+)/);
   datos.ingresos = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // venta
   m = mov.match(/\(\+\) VENTA \$:\s*([\d\.,]+)/);
   datos.venta = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // subtotal
   m = mov.match(/SUBTOTAL \$:\s*([\d\.,]+)/);
   datos.subtotal = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // vales
   m = mov.match(/VALES \$:\s*([\d\.,]+)/);
   datos.vales = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // total_caja
   m = mov.match(/TOTAL CAJA \$:\s*([\d\.,]+)/);
   datos.total_caja = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // retención
   m = mov.match(/RETENCION \$:\s*([\d\.,]+)/);
   datos.retención = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // devoluciones
   m = mov.match(/DEVOLUCIONES\$:\s*([\d\.,]+)/);
   datos.devoluciónes = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // efectivo
   m = mov.match(/EFECTIVO \$:\s*([\d\.,]+)/);
   datos.efectivo = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // tarjeta
   m = mov.match(/PAGOS CON TARJETA[\s\S]+?TOTAL\s+([\d\.,]+)/);
   datos.tarjeta = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // credito
   m = mov.match(/VENTAS AL CREDITO[\s\S]+?TOTAL\s+([\d\.,]+)/);
   datos.credito = m ? parseFloat(m[1].replace(",", "")) : 0;
 
-  // diferencia
   if (!isNaN(datos.efectivo) && !isNaN(datos.total_caja)) {
     const diff = +(datos.efectivo - datos.total_caja).toFixed(2);
     datos.diferencia = Math.abs(diff) < 0.01 ? 0 : diff;
@@ -67,35 +58,39 @@ function extraerDatosDeMovimiento(mov, idCorte) {
     datos.diferencia = "";
   }
 
-  // facturas_monto
   m = mov.match(/FACTURAS:\s+[\d\.,]+\s+[\d\.,]+\s+([\d\.,]+)/);
   datos.facturas_monto = m ? parseFloat(m[1].replace(",", "")) : "";
 
-  // credito_fiscal_monto
   m = mov.match(/FISCALES:\s+[\d\.,]+\s+[\d\.,]+\s+([\d\.,]+)/);
   datos.credito_fiscal_monto = m ? parseFloat(m[1].replace(",", "")) : "";
 
-  // facturas_cantidad
   m = mov.match(/FACTURAS:\s+\d+\s+\d+\s+(\d+)/);
   datos.facturas_cantidad = m ? parseInt(m[1], 10) : "";
 
-  // credito_fiscal_cantidad
   m = mov.match(/FISCALES:\s+\d+\s+\d+\s+(\d+)/);
   datos.credito_fiscal_cantidad = m ? parseInt(m[1], 10) : "";
 
-  // final (Z)
   datos.final = datos.tipo && datos.tipo.match(/z/i) ? "Si" : "";
 
-  // razón, corregido, responsable
   datos.razon = "";
   datos.corregido = "";
   datos.responsable = datos.cajero || "";
-
-  // id_corte, sucursal
   datos.id_corte = idCorte;
+
+  // Convertir fecha a formato ISO (Postgres)
+  datos.fecha = convertirFechaAISO(datos.fecha);
 
   return datos;
 }
+
+// ----------- FUNCIÓN PRINCIPAL --------------
+
+const db = require('./db');
+const { getProperty, setProperty } = require('./props');
+const { iniciarSesion } = require('./login');
+const { notificarCorteEnTelegram } = require('./telegram');
+const fetch = require('node-fetch');
+
 async function procesarSiguientesCortesCaja() {
   console.log('⏳ [procesarSiguientesCortesCaja] INICIO');
   let ultimoID = parseInt(await getProperty('ultimoIdCorteProcesado'), 10) || 1800;
