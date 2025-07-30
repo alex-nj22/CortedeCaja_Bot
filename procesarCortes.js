@@ -132,8 +132,6 @@ async function procesarSiguientesCortesCaja() {
       console.error(`❌ [FETCH] Sucursal ${sucursal} Corte ${idCorte}:`, e);
     }
   }
-datos.fecha = convertirFechaAISO(datos.fecha);
-console.log('[DEBUG] Fecha convertida:', datos.fecha);
 if (valido) {
   const datos = extraerDatosDeMovimiento(dataCorte.movimiento, idCorte);
   datos.fecha = convertirFechaAISO(datos.fecha);
@@ -161,7 +159,6 @@ if (valido) {
   await notificarCorteEnTelegram(dataCorte, idCorte);
   console.log(`✅ [CORRECTO] Procesado corte válido: ${idCorte} sucursal ${sucursalValida}`);
 } else {
-  // Aquí NO uses "datos"
   console.log(`🛑 [NO VÁLIDO] Corte ${idCorte} no es válido (no se actualiza últimoId)`);
 }
 
