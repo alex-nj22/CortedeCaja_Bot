@@ -80,10 +80,10 @@ function extraerDatosDeMovimiento(mov, idCorte) {
   m = mov.match(/FISCALES:\s+\d+\s+\d+\s+(\d+)/);
   datos.credito_fiscal_cantidad = limpiarEntero(m ? m[1] : "");
 
-  datos.final = datos.tipo && datos.tipo.match(/z/i) ? "Si" : "";
+  datos.final = (datos.tipo && datos.tipo.match(/z/i)) ? true : false;
 
-  datos.razon = "";
-  datos.corregido = "";
+  datos.razon = false;
+  datos.corregido = false;
   datos.responsable = datos.cajero || "";
   datos.id_corte = idCorte;
 
