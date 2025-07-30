@@ -159,7 +159,7 @@ async function procesarSiguientesCortesCaja() {
         $11, $12, $13, $14, $15, $16, $17,
         $18, $19, $20, $21,
         $22, $23, $24, $25
-      ) ON CONFLICT (id_corte, sucursal) DO NOTHING
+      )
     `, [
       datos.id_corte, sucursalValida, datos.tipo, datos.fecha, datos.hora, datos.cajero, datos.ingresos, datos.venta, datos.subtotal, datos.vales,
       datos.total_caja, datos.retención, datos.devoluciónes, datos.efectivo, datos.tarjeta, datos.credito, datos.diferencia,
