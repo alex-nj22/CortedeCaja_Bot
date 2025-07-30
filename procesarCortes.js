@@ -132,10 +132,10 @@ async function procesarSiguientesCortesCaja() {
       console.error(`❌ [FETCH] Sucursal ${sucursal} Corte ${idCorte}:`, e);
     }
   }
-
+datos.fecha = convertirFechaAISO(datos.fecha);
+console.log('[DEBUG] Fecha convertida:', datos.fecha);
   if (valido) {
     const datos = extraerDatosDeMovimiento(dataCorte.movimiento, idCorte);
-
     await db.query(`
       INSERT INTO cortes_caja (
         id_corte, sucursal, tipo, fecha, hora, cajero, ingresos, venta, subtotal, vales,
