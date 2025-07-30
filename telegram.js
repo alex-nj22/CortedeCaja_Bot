@@ -25,3 +25,5 @@ async function notificarCorteEnTelegram(dataCorte, idCorte) {
   const resText = await res.text();
   console.log('[TELEGRAM RESPONSE]', resText);
 }
+
+module.exports = { notificarCorteEnTelegram };
